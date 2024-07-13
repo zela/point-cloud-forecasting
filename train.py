@@ -39,12 +39,12 @@ def make_data_loaders(args):
         Dataset = nuScenesDataset
         data_loaders = {
             "train": DataLoader(
-                Dataset(nusc, "train", dataset_kwargs),
+                Dataset(nusc, "mini_train", dataset_kwargs),
                 collate_fn=CollateFn,
                 **data_loader_kwargs,
             ),
             "val": DataLoader(
-                Dataset(nusc, "val", dataset_kwargs),
+                Dataset(nusc, "mini_val", dataset_kwargs),
                 collate_fn=CollateFn,
                 **data_loader_kwargs,
             ),
@@ -99,7 +99,7 @@ def train(args):
     # dataset
     data_loaders = make_data_loaders(args)
 
-    ForecastingNetwork = PointNetPP(num_coords=3)  # 3 coordinates
+    ForecastingNetwork = PointNetPP(num_coords=3, batch_size=args.batch_size)  # 3 coordinates
 
     model = ForecastingNetwork
     model = model.to(device)
@@ -140,7 +140,7 @@ def train(args):
             for i, batch in enumerate(data_loader):
                 print("Batch:", i)
                 input_points, input_tindex = batch[1:3]
-                output_origin, output_points, output_tindex = batch[3:6]
+                _, output_points, output_tindex = batch[3:6]
                 optimizer.zero_grad()
 
                 with torch.set_grad_enabled(phase == "train"):
@@ -151,7 +151,7 @@ def train(args):
                     if phase == "train":
                         optimizer.step()
                     # TODO: average loss across the batches
-                    avg_loss = None
+                    avg_loss = loss.mean(axis=0)
 
                 print(
                     f"Phase: {phase},",
@@ -206,7 +206,7 @@ if __name__ == "__main__":
 
     data_group = parser.add_argument_group("data")
     data_group.add_argument("--dataset", type=str, default="nuscenes")
-    data_group.add_argument("--nusc-root", type=str, default="data3/sets/nuscenes")
+    data_group.add_argument("--nusc-root", type=str, default="data/sets/nuscenes")
     data_group.add_argument("--nusc-version", type=str, default="v1.0-mini")
     data_group.add_argument(
         "--pc-range",
@@ -222,13 +222,12 @@ if __name__ == "__main__":
 
     model_group = parser.add_argument_group("model")
     model_group.add_argument("--model-dir", type=str, required=True)
-    model_group.add_argument("--loss-type", type=str, required=True)
     model_group.add_argument("--optimizer", type=str, default="Adam")  # Adam with 5e-4
     model_group.add_argument("--lr-start", type=float, default=5e-4)
     model_group.add_argument("--lr-epoch", type=float, default=5)
     model_group.add_argument("--lr-decay", type=float, default=0.1)
     model_group.add_argument("--num-epoch", type=int, default=1)
-    model_group.add_argument("--batch-size", type=int, default=1)
+    model_group.add_argument("--batch-size", type=int, default=4)
     model_group.add_argument("--num-workers", type=int, default=8)
 
     args = parser.parse_args()

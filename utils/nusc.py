@@ -40,7 +40,7 @@ class nuScenesDataset(Dataset):
 
         # number of sweeps (every 1 sweep / 0.05s)
         self.n_input = kwargs["n_input"]
-        # number of samples (every 10 sweeps / 0.5s)
+        # number of samples (every 1 sweeps / 0.05s)
         self.n_output = kwargs["n_output"]
 
         scenes = self.nusc.scene
@@ -155,7 +155,7 @@ class nuScenesDataset(Dataset):
         input_points_list = []
         input_tindex_list = []
         input_origin_list = []
-        for i in range(self.n_input):
+        for i, j in zip(reversed(range(self.n_input)), range(self.n_input)): 
             index = ref_index - i
             # if this exists a valid target
             if self.scene_tokens[index] == ref_scene_token:
@@ -196,7 +196,7 @@ class nuScenesDataset(Dataset):
             input_origin_list.append(origin_tf)
 
             # timestamp index
-            tindex = np.full(len(points_tf), i, dtype=np.float32)
+            tindex = np.full(len(points_tf), j, dtype=np.float32)
             input_tindex_list.append(tindex)
 
         input_points_tensor = torch.from_numpy(np.concatenate(input_points_list))

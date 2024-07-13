@@ -108,9 +108,11 @@ class FPModule(torch.nn.Module):
 
 
 class PointNetPP(torch.nn.Module):
-    def __init__(self, num_coords):
+    def __init__(self, num_coords, batch_size):
         super().__init__()
         seed(12345)
+        self.num_coords = num_coords 
+        self.batch_size = batch_size
         # Input channels account for both `pos` and node features.
         # Perform the downsampling and feature aggregation
         # Sample 20% of input points, group them within the radius of 0.2 and encode the features into a 16-dim vector
@@ -122,7 +124,7 @@ class PointNetPP(torch.nn.Module):
         self.sa3_module = GlobalSAModule(MLP([64 + 3, 64, 128]))
 
         # Insert LSTM -> dim = 128
-        self.lstm = torch.nn.LSTM(128, 128, 2, batch_first=True)
+        self.lstm = torch.nn.LSTM(128, 128, 2 * batch_size, batch_first=True)
 
         # Perform upsampling and feature propagation
         # Interpolate output features from sa3_module and concatenate with the sa2_module output features
@@ -141,9 +143,10 @@ class PointNetPP(torch.nn.Module):
 
     def forward(self, input_points, input_tindex):
         data_list = []
-        for _ in range(input_points.shape[0]):
-            input_points_0 = input_points[input_tindex == 0]
-            input_points_1 = input_points[input_tindex == 1]
+        input_points_nan = input_points[input_tindex == -1]
+        for i in range(input_points.shape[0]):
+            input_points_0 = input_points[i, input_tindex[i] == 0]
+            input_points_1 = input_points[i, input_tindex[i] == 1]
             data_list.append(Data(x=None, pos=input_points_0))
             data_list.append(Data(x=None, pos=input_points_1))
         data = Batch.from_data_list(data_list)
@@ -156,7 +159,7 @@ class PointNetPP(torch.nn.Module):
         sa3_out = self.sa3_module(*sa2_out) # x, pos, batch after the 3rd global SA layer (pos are all zeros here!)
 
         # LSTM
-        lstm_out = self.lstm(sa3_out[0].unsqueeze(0))[0].squeeze(0)
+        lstm_out = self.lstm(sa3_out[0].unsqueeze(0))[0].squeeze(0) # Would be nice to doublecheck
 
         # Replace sa3_out learned features with the LSTM output
         sa3_out = (lstm_out, sa3_out[1], sa3_out[2])
@@ -166,4 +169,4 @@ class PointNetPP(torch.nn.Module):
         x, _, _ = self.fp1_module(*fp2_out, *sa0_out) # x - node embeddings for each point in the original point clouds
 
         # Generate final label predictions for each data point in each batch
-        return self.mlp(x)
+        return self.mlp(x).view(self.batch_size, -1, self.num_coords) # Dim = 1 x Num_nodes x num_coords
