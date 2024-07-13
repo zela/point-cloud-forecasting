@@ -143,10 +143,16 @@ class PointNetPP(torch.nn.Module):
 
     def forward(self, input_points, input_tindex):
         data_list = []
-        input_points_nan = input_points[input_tindex == -1]
         for i in range(input_points.shape[0]):
             input_points_0 = input_points[i, input_tindex[i] == 0]
             input_points_1 = input_points[i, input_tindex[i] == 1]
+
+            pad_len = self.batch_size - input_points_0.shape[0] % self.batch_size
+            input_points_0 = torch.cat([input_points_0, torch.zeros(pad_len, 3)], dim=0)
+
+            pad_len = self.batch_size - input_points_1.shape[0] % self.batch_size
+            input_points_1 = torch.cat([input_points_1, torch.zeros(pad_len, 3)], dim=0)
+            
             data_list.append(Data(x=None, pos=input_points_0))
             data_list.append(Data(x=None, pos=input_points_1))
         data = Batch.from_data_list(data_list)
@@ -169,4 +175,4 @@ class PointNetPP(torch.nn.Module):
         x, _, _ = self.fp1_module(*fp2_out, *sa0_out) # x - node embeddings for each point in the original point clouds
 
         # Generate final label predictions for each data point in each batch
-        return self.mlp(x).view(self.batch_size, -1, self.num_coords) # Dim = 1 x Num_nodes x num_coords
+        return self.mlp(x).view(self.batch_size, -1, self.num_coords) # Dim = batch x Num_nodes x num_coords
