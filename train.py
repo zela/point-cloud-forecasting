@@ -8,6 +8,7 @@ import numpy as np
 from torch import nn
 from torch.utils.data import DataLoader
 from torch.utils.tensorboard import SummaryWriter
+from pytorch3d.loss import chamfer_distance
 
 from utils.collate import CollateFn
 from gnn import PointNetPP
@@ -145,18 +146,18 @@ def train(args):
                 with torch.set_grad_enabled(phase == "train"):
                     out = model(input_points, input_tindex)
                     print("Done predicting")
-                    # TODO: get Chamfer distance from pytorch3d. I couldn't install pytorch3d with pip
-                    loss = None
+                    # https://pytorch3d.readthedocs.io/en/latest/modules/loss.html
+                    loss, _ = chamfer_distance(out, output_points, single_directional=True)
                     if phase == "train":
                         optimizer.step()
                     # TODO: average loss across the batches
                     avg_loss = None
 
                 print(
-                            f"Phase: {phase},",
-                            f"Epoch: {epoch}/{args.num_epoch},",
-                            f"Batch: {i}/{num_batch},",
-                            f"{loss.upper()} Loss: {avg_loss.item():.3f}",
+                    f"Phase: {phase},",
+                    f"Epoch: {epoch}/{args.num_epoch},",
+                    f"Batch: {i}/{num_batch},",
+                    f"{loss.upper()} Loss: {avg_loss.item():.3f}",
                 )
 
                 '''    
