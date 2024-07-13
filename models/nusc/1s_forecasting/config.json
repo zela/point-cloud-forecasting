@@ -1,0 +1,27 @@
+{
+    "dataset": "nuscenes",
+    "nusc_root": "/Users/amo/Projects/ds/sets/nuscenes_mini",
+    "nusc_version": "v1.0-mini",
+    "pc_range": [
+        -70.0,
+        -70.0,
+        -4.5,
+        70.0,
+        70.0,
+        4.5
+    ],
+    "voxel_size": 0.2,
+    "n_input": 2,
+    "input_step": 1,
+    "n_output": 2,
+    "output_step": 1,
+    "model_dir": "models/nusc/1s_forecasting",
+    "loss_type": "l1",
+    "optimizer": "Adam",
+    "lr_start": 0.0005,
+    "lr_epoch": 5,
+    "lr_decay": 0.1,
+    "num_epoch": 5,
+    "batch_size": 4,
+    "num_workers": 4
+}
