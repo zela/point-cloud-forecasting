@@ -1,9 +1,7 @@
 #!/bin/bash
 
 python train.py --dataset nuscenes \
-    --nusc-root /Users/amo/Projects/ds/sets/nuscenes_mini \
     --model-dir models/nusc/1s_forecasting \
-    --loss-type l1 \
     --n-input 2 \
     --n-output 2 \
     --pc-range -70.0 -70.0 -4.5 70.0 70.0 4.5 \
@@ -13,7 +11,6 @@ python train.py --dataset nuscenes \
 
 python train.py --dataset nuscenes \
     --model-dir models/nusc/3s_forecasting \
-    --loss-type l1 \
     --n-input 6 \
     --n-output 6 \
     --pc-range -70.0 -70.0 -4.5 70.0 70.0 4.5 \
