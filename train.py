@@ -11,6 +11,7 @@ from torch.utils.tensorboard import SummaryWriter
 from pytorch3d.loss import chamfer_distance
 
 from utils.collate import CollateFn
+from utils.timed import timed_hoc
 from gnn import PointNetPP
 
 
@@ -36,15 +37,14 @@ def make_data_loaders(args):
         from nuscenes.nuscenes import NuScenes
 
         nusc = NuScenes(args.nusc_version, args.nusc_root)
-        Dataset = nuScenesDataset
         data_loaders = {
             "train": DataLoader(
-                Dataset(nusc, "mini_train", dataset_kwargs),
+                nuScenesDataset(nusc, "mini_train", dataset_kwargs),
                 collate_fn=CollateFn,
                 **data_loader_kwargs,
             ),
             "val": DataLoader(
-                Dataset(nusc, "mini_val", dataset_kwargs),
+                nuScenesDataset(nusc, "mini_val", dataset_kwargs),
                 collate_fn=CollateFn,
                 **data_loader_kwargs,
             ),
@@ -125,39 +125,45 @@ def train(args):
     model = nn.DataParallel(model)
 
     writer = SummaryWriter(f"{args.model_dir}/tf_logs")
+
     for epoch in range(0, args.num_epoch):
         print("Epoch:", epoch)
+
         for phase in ["train"]:  # , "val"]:
             data_loader = data_loaders[phase]
+
             if phase == "train":
-                model.train()
+                # model.train()
+                timed_hoc(model.train)
             else:
                 model.eval()
 
-            total_val_loss = {}
             num_batch = len(data_loader)
-            num_example = len(data_loader.dataset)
+            # num_example = len(data_loader.dataset)
             for i, batch in enumerate(data_loader):
                 print("Batch:", i)
+
                 input_points, input_tindex = batch[1:3]
                 _, output_points, output_tindex = batch[3:6]
                 optimizer.zero_grad()
 
                 with torch.set_grad_enabled(phase == "train"):
-                    out = model(input_points, input_tindex)
-                    print("Done predicting")
+                    # out = model(input_points, input_tindex)
+                    out = timed_hoc(model, input_points, input_tindex)
+
                     # https://pytorch3d.readthedocs.io/en/latest/modules/loss.html
-                    loss, _ = chamfer_distance(out, output_points, single_directional=True)
+                    # loss, _ = chamfer_distance(out, output_points, single_directional=True)
+                    loss, _ = timed_hoc(chamfer_distance, out, output_points, single_directional=True)
+
                     if phase == "train":
                         optimizer.step()
-                    # TODO: average loss across the batches
                     avg_loss = loss.mean(axis=0)
 
                 print(
                     f"Phase: {phase},",
                     f"Epoch: {epoch}/{args.num_epoch},",
                     f"Batch: {i}/{num_batch},",
-                    f"{loss.upper()} Loss: {avg_loss.item():.3f}",
+                    f"{loss} Loss: {avg_loss.item():.3f}",
                 )
 
                 '''    
