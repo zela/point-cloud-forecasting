@@ -4,6 +4,7 @@
 VERSION=2.2.2
 VISIONVERSION=0.17.2
 
+python -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 

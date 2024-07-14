@@ -14,6 +14,7 @@ if [ $? -ne 0 ]; then
     # Get CUDA version
     CUDA_VERSION=$(python -c "import torch; print(torch.version.cuda.replace('.', ''))")
 
+# "https://dl.fbaipublicfiles.com/pytorch3d/packaging/wheels/py310_cu118_pyt222/download.html"
     # Check if we can install from a wheel
     if [[ $PYTORCH_VERSION == 22* && $(uname) == "Linux" ]]; then
         VERSION_STR="py3${PYTHON_VERSION//./}_cu${CUDA_VERSION}_pyt${PYTORCH_VERSION}"
