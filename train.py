@@ -159,6 +159,12 @@ def train(args):
                         optimizer.step()
                     avg_loss = loss.mean(axis=0)
 
+                    # Writing the loss function to tensorboard
+                    if phase == "train":
+                        writer.add_scalar("Loss/train", avg_loss.item(), epoch * len(data_loader) + i)
+                    else:
+                        writer.add_scalar("Loss/val", avg_loss.item(), epoch * len(data_loader) + i)
+
                 print(
                     f"Phase: {phase},",
                     f"Epoch: {epoch}/{args.num_epoch},",
