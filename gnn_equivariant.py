@@ -143,7 +143,7 @@ class FPModule(torch.nn.Module):
         return x, pos_skip, batch_skip
 
 
-class PointNetPP(torch.nn.Module):
+class PointNetPPEQ(torch.nn.Module):
     def __init__(self, num_coords, batch_size):
         super().__init__()
         seed(12345)

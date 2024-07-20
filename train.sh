@@ -2,6 +2,7 @@
 
 python train.py --dataset nuscenes \
     --model-dir models/nusc/1s_forecasting \
+    --model-variant equivariant \
     --n-input 2 \
     --n-output 2 \
     --pc-range -70.0 -70.0 -4.5 70.0 70.0 4.5 \

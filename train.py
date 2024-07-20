@@ -12,7 +12,8 @@ from pytorch3d.loss import chamfer_distance
 
 from utils.collate import CollateFn
 from utils.timed import timed_hoc
-from gnn import PointNetPP
+from gnn_equivariant import PointNetPPEQ
+from gnn_pnpp import PointNetPP
 
 
 def make_data_loaders(args):
@@ -99,9 +100,14 @@ def train(args):
     # dataset
     data_loaders = make_data_loaders(args)
 
-    ForecastingNetwork = PointNetPP(num_coords=3, batch_size=args.batch_size)  # 3 coordinates
+    # Conditional model assignment based on args.model_variant
+    if args.model_variant == "equivariant":
+        model = PointNetPPEQ(num_coords=3, batch_size=args.batch_size)
+    else:
+        model = PointNetPP(num_coords=3, batch_size=args.batch_size)
 
-    model = ForecastingNetwork
+    print(f"Model variant: {args.model_variant} {model}")
+    # Move the model to the specified device
     model = model.to(device)
 
     # optimizer
@@ -234,6 +240,7 @@ if __name__ == "__main__":
 
     model_group = parser.add_argument_group("model")
     model_group.add_argument("--model-dir", type=str, required=True)
+    model_group.add_argument("--model-variant", type=str, default="baseline")
     model_group.add_argument("--optimizer", type=str, default="Adam")  # Adam with 5e-4
     model_group.add_argument("--lr-start", type=float, default=5e-4)
     model_group.add_argument("--lr-epoch", type=float, default=5)
